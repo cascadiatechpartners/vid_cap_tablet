@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: vid_cap_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: vid_cap_tablet
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - vid_cap_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vid_cap_app
+    restart: unless-stopped
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/vid_cap_tablet
+      - MONGODB_DATABASE=vid_cap_tablet
+      - PORT=3000
+      - HOST=0.0.0.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./config/.env:/app/config/.env:ro
+    devices:
+      - /dev/video2:/dev/video2
+    depends_on:
+      - mongodb
+    networks:
+      - vid_cap_network
+    privileged: true
+
+volumes:
+  mongodb_data:
+
+networks:
+  vid_cap_network:
+    driver: bridge
